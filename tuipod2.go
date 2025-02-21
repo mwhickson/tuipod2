@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"encoding/xml"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -27,12 +29,16 @@ type Subscription struct {
 func main() {
 	fmt.Println("tuipod2")
 
+	// test data
+
 	episode := Episode{"https://podcast.com/episode.mp3", "Sample Episode"}
 	podcast := Podcast{"https://podcast.com/", "Sample Podcast", make([]Episode, 0)}
 
 	podcast.Episodes = append(podcast.Episodes, episode)
 
 	fmt.Println("PODCAST:", podcast)
+
+	// test opml
 
 	file, err := os.Open("subscriptions.opml")
 
@@ -59,5 +65,16 @@ func main() {
 		}
 	}
 
-	fmt.Println("OPML:", len(opml), opml)
+	//fmt.Println("OPML:", len(opml), opml)
+	fmt.Println("First Subscription", opml[0])
+
+	// test network pull
+	resp, err := http.Get(opml[0].XmlUrl)
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	body_as_string := string(body[:])
+
+	fmt.Println("RESPONSE", body_as_string)
 }
