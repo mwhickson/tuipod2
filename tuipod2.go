@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"encoding/xml"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type Episode struct {
@@ -15,6 +17,11 @@ type Podcast struct {
 	Url      string
 	Title    string
 	Episodes []Episode
+}
+
+type Subscription struct {
+	Text   string `xml:"text,attr"`
+	XmlUrl string `xml:"xmlUrl,attr"`
 }
 
 func main() {
@@ -35,12 +42,21 @@ func main() {
 
 	defer file.Close()
 
-	opml := make([]string, 0)
+	opml := make([]Subscription, 0)
 	scanner := bufio.NewScanner((file))
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		opml = append(opml, line)
+		if strings.Contains(line, "xmlUrl") {
+			subscription := &Subscription{}
+			err = xml.Unmarshal([]byte(line), subscription)
+
+			if err != nil {
+				fmt.Println("ERROR:", err)
+			}
+
+			opml = append(opml, *subscription)
+		}
 	}
 
 	fmt.Println("OPML:", len(opml), opml)
