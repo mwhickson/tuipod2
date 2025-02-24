@@ -8,7 +8,23 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	// REF: https://pkg.go.dev/github.com/metafates/pat/color
+	"github.com/charmbracelet/lipgloss"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
+
+const app_name = "tuipod2"
+const statusbar_template = "STATUS"
+
+type model struct {
+	console_height   int
+	console_width    int
+	podcasts         []string
+	selected_podcast int
+	selected_episode int
+}
 
 type Episode struct {
 	Url   string
@@ -52,7 +68,7 @@ type Rss struct {
 }
 
 func main() {
-	fmt.Println("tuipod2")
+	//fmt.Println("tuipod2")
 
 	// test data
 
@@ -61,7 +77,7 @@ func main() {
 
 	podcast.Episodes = append(podcast.Episodes, episode)
 
-	fmt.Println("PODCAST:", podcast)
+	//fmt.Println("PODCAST:", podcast)
 
 	// test opml
 
@@ -92,7 +108,7 @@ func main() {
 	}
 
 	//fmt.Println("OPML:", len(opml), opml)
-	fmt.Println("First Subscription", opml[0])
+	//fmt.Println("First Subscription", opml[0])
 
 	// test network pull
 	resp, err := http.Get(opml[0].XmlUrl)
@@ -118,5 +134,76 @@ func main() {
 		fmt.Println("ERROR:", err)
 	}
 
-	fmt.Println(rss)
+	//fmt.Println(rss)
+
+	// Bubble Tea UI
+	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
+	if _, err = p.Run(); err != nil {
+		fmt.Println("ERROR", err)
+		os.Exit(1)
+	}
+}
+
+func initialModel() model {
+	return model{
+		console_height: 0,
+		console_width:  0,
+		podcasts:       make([]string, 0),
+	}
+}
+
+func (m model) Init() tea.Cmd {
+	return nil
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.console_height = msg.Height
+		m.console_width = msg.Width
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "esc", "ctrl+c", "q":
+			return m, tea.Quit
+		}
+	}
+
+	return m, nil
+}
+
+func (m model) View() string {
+
+	s := RenderTitlebar(m) + "\n"
+
+	for ndx := 2; ndx < m.console_height; ndx++ {
+		s += "\n"
+	}
+
+	s += RenderStatusbar(m)
+
+	return s
+}
+
+func RenderTitlebar(m model) string {
+	titlebar := app_name
+	titlebar_style := lipgloss.NewStyle().
+		Width(m.console_width).
+		Foreground(lipgloss.Color("11")).
+		Background(lipgloss.Color("12"))
+
+	s := titlebar_style.Render(titlebar)
+
+	return s
+}
+
+func RenderStatusbar(m model) string {
+	statusbar := statusbar_template
+	statusbar_style := lipgloss.NewStyle().
+		Width(m.console_width).
+		Foreground(lipgloss.Color("8")).
+		Background(lipgloss.Color("15"))
+
+	s := statusbar_style.Render(statusbar)
+
+	return s
 }
