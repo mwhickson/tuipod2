@@ -12,6 +12,8 @@ import (
 	// REF: https://pkg.go.dev/github.com/metafates/pat/color
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/charmbracelet/bubbles/textinput"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -21,6 +23,7 @@ const statusbar_template = "STATUS"
 type model struct {
 	console_height   int
 	console_width    int
+	search           textinput.Model
 	podcasts         []string
 	selected_podcast int
 	selected_episode int
@@ -145,9 +148,15 @@ func main() {
 }
 
 func initialModel() model {
+	ti := textinput.New()
+
+	ti.Placeholder = "Search"
+	ti.CharLimit = 255
+
 	return model{
 		console_height: 0,
 		console_width:  0,
+		search:         ti,
 		podcasts:       make([]string, 0),
 	}
 }
@@ -157,6 +166,8 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.console_height = msg.Height
@@ -168,14 +179,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	return m, nil
+	m.search.Width = m.console_width
+	m.search.Focus()
+
+	m.search, cmd = m.search.Update(msg)
+
+	return m, cmd
 }
 
 func (m model) View() string {
 
 	s := RenderTitlebar(m) + "\n"
 
-	for ndx := 2; ndx < m.console_height; ndx++ {
+	s += m.search.View()
+
+	for ndx := 3; ndx < m.console_height; ndx++ {
 		s += "\n"
 	}
 
