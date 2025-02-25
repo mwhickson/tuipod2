@@ -18,6 +18,10 @@ This implementation strives to be Go all the way!
 - maintain a podcast subscription list
 - *more (still in development)*
 
+## Screenshots
+
+![tuipod2 (work in progress)](tuipod2-wip.png)
+
 ## License
 
 [MIT License](LICENSE)

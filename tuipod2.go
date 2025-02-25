@@ -5,13 +5,15 @@ import (
 	"encoding/xml"
 	"fmt"
 	//"io"
-	"net/http"
+	"math"
+	//"net/http"
 	"os"
 	"strings"
 
 	// REF: https://pkg.go.dev/github.com/metafates/pat/color
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -21,12 +23,11 @@ const app_name = "tuipod2"
 const statusbar_template = "STATUS"
 
 type model struct {
-	console_height   int
-	console_width    int
-	search           textinput.Model
-	podcasts         []string
-	selected_podcast int
-	selected_episode int
+	console_height int
+	console_width  int
+	search         textinput.Model
+	podcast_table  table.Model
+	episode_table  table.Model
 }
 
 type Episode struct {
@@ -87,7 +88,7 @@ func main() {
 	file, err := os.Open("subscriptions.opml")
 
 	if err != nil {
-		fmt.Println("ERROR:", err)
+		fmt.Println("ERROR opening subscriptions.opml:", err)
 	}
 
 	defer file.Close()
@@ -103,7 +104,7 @@ func main() {
 			err = xml.Unmarshal([]byte(line), subscription)
 
 			if err != nil {
-				fmt.Println("ERROR:", err)
+				fmt.Println("ERROR extracting subscription detail:", err)
 			}
 
 			opml = append(opml, *subscription)
@@ -114,13 +115,15 @@ func main() {
 	//fmt.Println("First Subscription", opml[0])
 
 	// test network pull
-	resp, err := http.Get(opml[0].XmlUrl)
+	/*
+		resp, err := http.Get(opml[0].XmlUrl)
 
-	if resp != nil {
-		fmt.Println("ERROR:", err)
-	}
+		if resp != nil {
+			fmt.Println("ERROR retrieving feeds:", err)
+		}
 
-	defer resp.Body.Close()
+		defer resp.Body.Close()
+	*/
 
 	//body, err := io.ReadAll(resp.Body)
 	//body_as_string := string(body[:]) // TODO: tighten this up
@@ -129,35 +132,65 @@ func main() {
 
 	// TODO: parse podcast feed into our data objects
 
-	rss := Rss{}
+	/*
+		rss := Rss{}
 
-	decoder := xml.NewDecoder(resp.Body)
-	err = decoder.Decode(&rss)
-	if err != nil {
-		fmt.Println("ERROR:", err)
-	}
+		decoder := xml.NewDecoder(resp.Body)
+		err = decoder.Decode(&rss)
+		if err != nil {
+			fmt.Println("ERROR parsing feeds:", err)
+		}
+	*/
 
 	//fmt.Println(rss)
 
 	// Bubble Tea UI
-	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
+	p := tea.NewProgram(initialModel(opml), tea.WithAltScreen())
 	if _, err = p.Run(); err != nil {
-		fmt.Println("ERROR", err)
+		fmt.Println("ERROR running program:", err)
 		os.Exit(1)
 	}
 }
 
-func initialModel() model {
+func initialModel(subscriptions []Subscription) model {
 	ti := textinput.New()
 
 	ti.Placeholder = "Search"
 	ti.CharLimit = 255
 
+	pt_columns := []table.Column{
+		{Title: "Podcast Title", Width: 40},
+	}
+
+	et_columns := []table.Column{
+		{Title: "Episode Title", Width: 40},
+	}
+
+	podcasts := make([]table.Row, 0)
+	for _, subscription := range subscriptions {
+		row := table.Row{subscription.Text}
+		podcasts = append(podcasts, row)
+	}
+
+	pt := table.New(
+		table.WithColumns(pt_columns),
+		table.WithRows(podcasts),
+	)
+
+	pt.SetStyles(table.DefaultStyles())
+
+	et := table.New(
+		table.WithColumns(et_columns),
+	)
+
+	et.SetStyles(table.DefaultStyles())
+
 	return model{
 		console_height: 0,
 		console_width:  0,
 		search:         ti,
-		podcasts:       make([]string, 0),
+		podcast_table:  pt,
+		episode_table:  et,
 	}
 }
 
@@ -188,15 +221,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-
-	s := RenderTitlebar(m) + "\n"
-
-	s += m.search.View()
-
-	for ndx := 3; ndx < m.console_height; ndx++ {
-		s += "\n"
-	}
-
+	s := ""
+	s += RenderTitlebar(m) + "\n"
+	s += RenderSearchbar(m) + "\n"
+	s += RenderPodcastTable(m) + "\n"
+	s += RenderEpisodeTable(m) + "\n"
 	s += RenderStatusbar(m)
 
 	return s
@@ -212,6 +241,24 @@ func RenderTitlebar(m model) string {
 	s := titlebar_style.Render(titlebar)
 
 	return s
+}
+
+func RenderSearchbar(m model) string {
+	return m.search.View()
+}
+
+func RenderPodcastTable(m model) string {
+	table_height := math.Ceil((float64(m.console_height) - 3.0) / 2.0)
+	m.podcast_table.SetWidth(m.console_width) // height change works, but width doesn't seem to...
+	m.podcast_table.SetHeight(int(table_height))
+	return m.podcast_table.View()
+}
+
+func RenderEpisodeTable(m model) string {
+	table_height := math.Floor((float64(m.console_height) - 3.0) / 2.0)
+	m.episode_table.SetWidth(m.console_width) // height change works, but width doesn't seem to...
+	m.episode_table.SetHeight(int(table_height))
+	return m.episode_table.View()
 }
 
 func RenderStatusbar(m model) string {
