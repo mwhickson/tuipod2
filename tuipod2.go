@@ -137,13 +137,21 @@ func main() {
 	search := tview.NewInputField().
 		SetLabel("Search:")
 
-	box := tview.NewBox().
-		SetBackgroundColor(tcell.ColorDarkBlue)
+	// box := tview.NewBox().
+	// 	SetBackgroundColor(tcell.ColorDarkBlue)
+
+	podcast_table := tview.NewTable().
+		SetBorder(true)
+
+	episode_table := tview.NewTable().
+		SetBorder(true)
 
 	flex := tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(search, 1, 1, true).
-		AddItem(box, 0, 1, false)
+		AddItem(podcast_table, 0, 1, false).
+		AddItem(episode_table, 0, 1, false)
+		// AddItem(box, 0, 1, false)
 
 	frame := tview.NewFrame(flex).
 		SetBorders(0, 0, 0, 0, 0, 0).
