@@ -134,14 +134,21 @@ func main() {
 
 	app := tview.NewApplication()
 
-	frame := tview.NewFrame(tview.NewBox().SetBackgroundColor(tcell.ColorBlue)).
+	search := tview.NewInputField().
+		SetLabel("Search:")
+
+	box := tview.NewBox().
+		SetBackgroundColor(tcell.ColorDarkBlue)
+
+	flex := tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(search, 1, 1, true).
+		AddItem(box, 0, 1, false)
+
+	frame := tview.NewFrame(flex).
 		SetBorders(0, 0, 0, 0, 0, 0).
 		AddText(app_name, true, tview.AlignLeft, tcell.ColorWhite).
 		AddText(statusbar_template, false, tview.AlignLeft, tcell.ColorWhite)
-
-	// box := tview.NewBox().
-	// 	SetBorder(true).
-	// 	SetTitle(app_name)
 
 	if err := app.SetRoot(frame, true).SetFocus(frame).Run(); err != nil {
 		panic(err)
