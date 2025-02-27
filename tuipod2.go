@@ -134,24 +134,36 @@ func main() {
 
 	app := tview.NewApplication()
 
-	search := tview.NewInputField().
-		SetLabel("Search:")
+	search := tview.NewInputField().SetPlaceholder("search for a podcast...")
 
-	// box := tview.NewBox().
-	// 	SetBackgroundColor(tcell.ColorDarkBlue)
+	// set up podcast table
 
-	podcast_table := tview.NewTable().
-		SetBorder(true)
+	podcast_table := tview.NewTable()
 
-	episode_table := tview.NewTable().
-		SetBorder(true)
+	podcast_table.SetTitle("Podcasts")
+	podcast_table.SetBorder(true)
+	podcast_table.SetBackgroundColor(tcell.ColorDarkBlue)
+	podcast_table.SetSelectable(true, false)
+
+	for i := 0; i < len(opml); i++ {
+		podcast_table.SetCell(i, 0, tview.NewTableCell(opml[i].Text))
+	}
+
+	// set up episodes table
+
+	episode_table := tview.NewTable()
+
+	episode_table.SetTitle("Episodes")
+	episode_table.SetBorder(true)
+	episode_table.SetBackgroundColor(tcell.ColorBlue)
+
+	// bring it all together
 
 	flex := tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(search, 1, 1, true).
 		AddItem(podcast_table, 0, 1, false).
 		AddItem(episode_table, 0, 1, false)
-		// AddItem(box, 0, 1, false)
 
 	frame := tview.NewFrame(flex).
 		SetBorders(0, 0, 0, 0, 0, 0).
