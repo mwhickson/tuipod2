@@ -170,7 +170,8 @@ func main() {
 		AddText(app_name, true, tview.AlignLeft, tcell.ColorWhite).
 		AddText(statusbar_template, false, tview.AlignLeft, tcell.ColorWhite)
 
-	if err := app.SetRoot(frame, true).SetFocus(frame).Run(); err != nil {
+	//if err := app.SetRoot(frame, true).SetFocus(frame).Run(); err != nil {
+	if err := app.SetRoot(frame, true).SetFocus(podcast_table).Run(); err != nil {
 		panic(err)
 	}
 }
