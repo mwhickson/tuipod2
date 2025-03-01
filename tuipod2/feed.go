@@ -33,7 +33,7 @@ type Feed struct {
 func RetrieveFeed(url string) Feed {
 	resp, err := http.Get(url) // TODO: set client name
 
-	if resp != nil {
+	if err != nil {
 		panic(err)
 	}
 
