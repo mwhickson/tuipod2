@@ -3,7 +3,6 @@ package tuipod2
 import (
 	"bufio"
 	"encoding/xml"
-	"fmt"
 	"os"
 	"strings"
 )
@@ -18,16 +17,16 @@ func NewSubscription(url string, title string) *Subscription {
 	return s
 }
 
-func LoadSubscriptions() {
-	file, err := os.Open("data/subscriptions.opml")
+func LoadSubscriptions(subscription_file string) []Subscription {
+	file, err := os.Open(subscription_file)
 
 	if err != nil {
-		fmt.Println("ERROR opening subscriptions.opml:", err)
+		panic(err)
 	}
 
 	defer file.Close()
 
-	opml := make([]Subscription, 0)
+	subscriptions := make([]Subscription, 0)
 	scanner := bufio.NewScanner((file))
 
 	// TODO: get rid of entry == line expectation
@@ -38,15 +37,12 @@ func LoadSubscriptions() {
 			err = xml.Unmarshal([]byte(line), subscription)
 
 			if err != nil {
-				fmt.Println("ERROR extracting subscription detail:", err)
+				panic(err)
 			}
 
-			opml = append(opml, *subscription)
+			subscriptions = append(subscriptions, *subscription)
 		}
 	}
 
-	// test opml
-
-	//fmt.Println("OPML:", len(opml), opml)
-	//fmt.Println("First Subscription", opml[0])
+	return subscriptions
 }

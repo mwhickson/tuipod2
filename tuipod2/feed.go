@@ -1,7 +1,9 @@
 package tuipod2
 
-//"io"
-//"net/http"
+import (
+	"encoding/xml"
+	"net/http"
+)
 
 type Enclosure struct {
 	Url    string `xml:"url,attr"`
@@ -24,38 +26,26 @@ type Channel struct {
 	Items       []Item `xml:"item"`
 }
 
-type Rss struct {
+type Feed struct {
 	Channel Channel `xml:"channel"`
 }
 
-// func TestFeed() {
-// test network pull
-/*
-	resp, err := http.Get(opml[0].XmlUrl)
+func RetrieveFeed(url string) Feed {
+	resp, err := http.Get(url) // TODO: set client name
 
 	if resp != nil {
-		fmt.Println("ERROR retrieving feeds:", err)
+		panic(err)
 	}
 
 	defer resp.Body.Close()
-*/
 
-//body, err := io.ReadAll(resp.Body)
-//body_as_string := string(body[:]) // TODO: tighten this up
-
-//fmt.Println("RESPONSE", body_as_string)
-
-// TODO: parse podcast feed into our data objects
-
-/*
-	rss := Rss{}
+	feed := Feed{}
 
 	decoder := xml.NewDecoder(resp.Body)
-	err = decoder.Decode(&rss)
+	err = decoder.Decode(&feed)
 	if err != nil {
-		fmt.Println("ERROR parsing feeds:", err)
+		panic(err)
 	}
-*/
 
-//fmt.Println(rss)
-// }
+	return feed
+}
