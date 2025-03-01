@@ -10,13 +10,7 @@ This particular endeavor follows an attempt in Python with Textual, and (very) b
 
 This implementation strives to be Go all the way!
 
-## TODO: Features
-
-- discover podcasts through iTunes-based search
-- play podcast episodes directly from source
-- pause podcasts during play
-- maintain a podcast subscription list
-- *more (still in development)*
+[More overview here...](docs/overview.md)
 
 ## Screenshots
 
