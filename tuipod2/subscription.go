@@ -1,15 +1,25 @@
 package tuipod2
 
 import (
-	"bufio"
 	"encoding/xml"
 	"os"
-	"strings"
 )
 
 type Subscription struct {
 	Text   string `xml:"text,attr"`
 	XmlUrl string `xml:"xmlUrl,attr"`
+}
+
+type OutlineContainer struct {
+	Items []Subscription `xml:"outline"`
+}
+
+type Body struct {
+	Outline OutlineContainer `xml:"outline"`
+}
+
+type Opml struct {
+	Document Body `xml:"body"`
 }
 
 func NewSubscription(url string, title string) *Subscription {
@@ -26,23 +36,15 @@ func LoadSubscriptions(subscription_file string) []Subscription {
 
 	defer file.Close()
 
-	subscriptions := make([]Subscription, 0)
-	scanner := bufio.NewScanner((file))
+	opml := Opml{}
 
-	// TODO: get rid of entry == line expectation
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(line, "xmlUrl") {
-			subscription := &Subscription{}
-			err = xml.Unmarshal([]byte(line), subscription)
-
-			if err != nil {
-				panic(err)
-			}
-
-			subscriptions = append(subscriptions, *subscription)
-		}
+	decoder := xml.NewDecoder(file)
+	err = decoder.Decode(&opml)
+	if err != nil {
+		panic(err)
 	}
+
+	subscriptions := opml.Document.Outline.Items
 
 	return subscriptions
 }
