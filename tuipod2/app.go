@@ -11,7 +11,6 @@ const statusbar_template = "STATUS"
 var app = tview.NewApplication()
 
 var searchReference *tview.InputField
-var searchModal *tview.Modal
 
 var podcastTableReference *tview.Table
 var episodeTableReference *tview.Table
@@ -59,21 +58,13 @@ func onSearchSubmitted(key tcell.Key) {
 }
 
 func onSearchExecute(term string) {
-	searchModal = tview.NewModal().
-		SetText("Searching for: " + term).
-		AddButtons([]string{"Ok"}).
-		SetDoneFunc(onCloseSearch)
-
-	searchModal.SetTitle("Search")
-
+	searchModal := makeSearchModal(term)
 	pagesReference.AddPage("modal", searchModal, true, true)
 }
 
-func onCloseSearch(buttonIndex int, buttonLabel string) {
-	if buttonLabel == "Ok" {
-		pagesReference.RemovePage("modal")
-		app.SetFocus(searchReference)
-	}
+func onCloseSearch() {
+	pagesReference.RemovePage("modal")
+	app.SetFocus(searchReference)
 }
 
 func makeSearch() *tview.InputField {
@@ -81,6 +72,28 @@ func makeSearch() *tview.InputField {
 		SetPlaceholder("search for a podcast...").
 		SetDoneFunc(onSearchSubmitted)
 	return search_field
+}
+
+func makeSearchModal(term string) tview.Primitive {
+	form := tview.NewForm().
+		AddInputField("Search", term, 20, nil, nil).
+		AddButton("Ok", onCloseSearch)
+
+	form.SetBorder(true).SetTitle("Search")
+
+	return makeModal(form, 40, 10)
+}
+
+func makeModal(p tview.Primitive, width int, height int) tview.Primitive {
+	return tview.NewFlex().
+		AddItem(nil, 0, 1, false).
+		AddItem(
+			tview.NewFlex().
+				SetDirection(tview.FlexRow).
+				AddItem(nil, 0, 1, false).
+				AddItem(p, height, 1, true).
+				AddItem(nil, 0, 1, false), width, 1, true,
+		).AddItem(nil, 0, 1, false)
 }
 
 func onPodcastTableDone(key tcell.Key) {
