@@ -11,8 +11,11 @@ const statusbar_template = "STATUS"
 var app = tview.NewApplication()
 
 var searchReference *tview.InputField
+var searchModal *tview.Modal
+
 var podcastTableReference *tview.Table
 var episodeTableReference *tview.Table
+var pagesReference *tview.Pages
 
 func RunApplication() {
 	subscriptions := LoadSubscriptions("data/subscriptions.opml")
@@ -36,7 +39,12 @@ func RunApplication() {
 		AddText(app_name, true, tview.AlignLeft, tcell.ColorWhite).
 		AddText(statusbar_template, false, tview.AlignLeft, tcell.ColorWhite)
 
-	if err := app.SetRoot(frame, true).SetFocus(frame).Run(); err != nil {
+	pages := tview.NewPages().
+		AddPage("main", frame, true, true)
+
+	pagesReference = pages
+
+	if err := app.SetRoot(pages, true).SetFocus(pages).Run(); err != nil {
 		panic(err)
 	}
 }
@@ -44,6 +52,27 @@ func RunApplication() {
 func onSearchSubmitted(key tcell.Key) {
 	if key == tcell.KeyTab {
 		app.SetFocus(podcastTableReference)
+	} else if key == tcell.KeyEnter {
+		searchTerm := searchReference.GetText()
+		onSearchExecute(searchTerm)
+	}
+}
+
+func onSearchExecute(term string) {
+	searchModal = tview.NewModal().
+		SetText("Searching for: " + term).
+		AddButtons([]string{"Ok"}).
+		SetDoneFunc(onCloseSearch)
+
+	searchModal.SetTitle("Search")
+
+	pagesReference.AddPage("modal", searchModal, true, true)
+}
+
+func onCloseSearch(buttonIndex int, buttonLabel string) {
+	if buttonLabel == "Ok" {
+		pagesReference.RemovePage("modal")
+		app.SetFocus(searchReference)
 	}
 }
 
