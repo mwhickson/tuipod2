@@ -6,30 +6,32 @@ import (
 )
 
 const app_name = "tuipod2 v0.1"
-const statusbar_template = "STATUS"
+const statusbar_template = "STATUS | Search (Ctrl+S) | Quit (ESC)"
 
-var app = tview.NewApplication()
+var appReference *tview.Application
 
-var searchReference *tview.InputField
+// var searchReference *tview.InputField
 
 var podcastTableReference *tview.Table
 var episodeTableReference *tview.Table
 var pagesReference *tview.Pages
 
 func RunApplication() {
+	app := tview.NewApplication()
+
+	appReference = app
+	appReference.SetInputCapture(onAppInputCapture)
+
 	subscriptions := LoadSubscriptions("data/subscriptions.opml")
 
-	search := makeSearch()
 	podcast_table := makePodcastTable(subscriptions)
 	episode_table := makeEpisodeTable()
 
-	searchReference = search
 	podcastTableReference = podcast_table
 	episodeTableReference = episode_table
 
 	flex := tview.NewFlex().
 		SetDirection(tview.FlexRow).
-		AddItem(search, 1, 1, true).
 		AddItem(podcast_table, 0, 1, false).
 		AddItem(episode_table, 0, 1, false)
 
@@ -43,35 +45,57 @@ func RunApplication() {
 
 	pagesReference = pages
 
-	if err := app.SetRoot(pages, true).SetFocus(pages).Run(); err != nil {
+	if err := app.SetRoot(pages, true).SetFocus(podcast_table).Run(); err != nil {
 		panic(err)
 	}
 }
 
-func onSearchSubmitted(key tcell.Key) {
-	if key == tcell.KeyTab {
-		app.SetFocus(podcastTableReference)
-	} else if key == tcell.KeyEnter {
-		searchTerm := searchReference.GetText()
-		onSearchExecute(searchTerm)
+func onAppInputCapture(event *tcell.EventKey) *tcell.EventKey {
+	if event.Key() == tcell.KeyEscape {
+		onQuitConfirmExecute()
+		return nil
+	} else if event.Key() == tcell.KeyCtrlS {
+		onSearchExecute("")
+		return nil
 	}
+
+	return event
+}
+
+func onQuitConfirmExecute() {
+	quitConfirmModal := makeQuitConfirmModal()
+	pagesReference.AddPage("quitconfirm", quitConfirmModal, true, true)
+}
+
+func onCancelQuit() {
+	pagesReference.RemovePage("quitconfirm")
 }
 
 func onSearchExecute(term string) {
 	searchModal := makeSearchModal(term)
-	pagesReference.AddPage("modal", searchModal, true, true)
+	pagesReference.AddPage("searchform", searchModal, true, true)
 }
 
 func onCloseSearch() {
-	pagesReference.RemovePage("modal")
-	app.SetFocus(searchReference)
+	pagesReference.RemovePage("searchform")
 }
 
-func makeSearch() *tview.InputField {
-	search_field := tview.NewInputField().
-		SetPlaceholder("search for a podcast...").
-		SetDoneFunc(onSearchSubmitted)
-	return search_field
+func makeQuitConfirmModal() tview.Primitive {
+	quitModal := tview.NewModal()
+
+	quitModal.SetTitle("Quit")
+	quitModal.SetBorder(true)
+	quitModal.SetText("Really quit?")
+	quitModal.AddButtons([]string{"Ok", "Cancel"})
+	quitModal.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+		if buttonLabel == "Ok" {
+			appReference.Stop()
+		} else {
+			onCancelQuit()
+		}
+	})
+
+	return quitModal
 }
 
 func makeSearchModal(term string) tview.Primitive {
@@ -98,7 +122,7 @@ func makeModal(p tview.Primitive, width int, height int) tview.Primitive {
 
 func onPodcastTableDone(key tcell.Key) {
 	if key == tcell.KeyTab {
-		app.SetFocus(episodeTableReference)
+		appReference.SetFocus(episodeTableReference)
 	}
 }
 
@@ -120,7 +144,7 @@ func makePodcastTable(subscriptions []Subscription) *tview.Table {
 
 func onEpisodeTableDone(key tcell.Key) {
 	if key == tcell.KeyTab {
-		app.SetFocus(searchReference)
+		appReference.SetFocus(podcastTableReference)
 	}
 }
 
